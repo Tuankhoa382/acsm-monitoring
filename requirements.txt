@@ -1,5 +1,12 @@
+<<<<<<< HEAD
 streamlit
 locationsharinglib
 geopy
 pandas
+=======
+streamlit
+locationsharinglib
+geopy
+pandas
+>>>>>>> dd98bf4d22aaee9a50fe592b4a3c7e90c9190e6b
 plotly
