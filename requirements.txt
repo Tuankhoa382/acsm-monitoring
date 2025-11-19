@@ -1,0 +1,5 @@
+streamlit
+locationsharinglib
+geopy
+pandas
+plotly

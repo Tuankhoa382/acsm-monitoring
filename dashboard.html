@@ -1,0 +1,43 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="refresh" content="10">
+        <title>ACSM Kalman Monitoring</title>
+        <style>
+            body { font-family: 'Segoe UI', sans-serif; background-color: #eef2f5; padding: 20px; }
+            h1 { text-align: center; color: #2c3e50; }
+            .timestamp { text-align: center; color: #7f8c8d; margin-bottom: 30px; }
+            .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+            .card { background: white; width: 350px; padding: 20px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+            .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+            .badge { color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
+            .body { display: flex; align-items: center; gap: 15px; }
+            .visual img { width: 80px; height: 80px; object-fit: cover; border-radius: 50%; border: 2px solid #eee; }
+            .btn-map { display: block; text-align: center; text-decoration: none; background: #3498db; color: white; padding: 8px; border-radius: 6px; margin-top: 10px; font-size: 0.9em; }
+        </style>
+    </head>
+    <body>
+        <h1>🏗️ HỆ THỐNG GIÁM SÁT KALMAN FILTER</h1>
+        <p class="timestamp">📡 Cập nhật lúc: 14:49:57</p>
+        <div class="container">
+        <div class="card" style="border-top: 5px solid #2ecc71; opacity: 1;">
+            <div class="header">
+                <h3>👷 Vin Nguyễn</h3>
+                <span class="badge" style="background:#2ecc71">AN TOÀN</span>
+            </div>
+            <div class="body">
+                <div class="visual"><img src="https://cdn-icons-png.flaticon.com/512/148/148767.png"></div>
+                <div class="info">
+                    <p><strong>Cách Mốc (Kalman):</strong> <span style="font-size: 1.2em; color: #2ecc71">0.1 m</span></p>
+                    <p style="font-size: 0.8em; color: #666">Dự báo KF: 0.0 m</p>
+                    <a href="https://www.google.com/maps/search/?api=1&query=10.804193,106.7370209" target="_blank" class="btn-map">📍 Xem Bản Đồ</a>
+                </div>
+            </div>
+            
+        </div>
+        </div>
+    </body>
+    </html>
+    
