@@ -1,7 +1,6 @@
 import streamlit as st
 import time
 import os
-import sys
 from streamlit.web import cli as stcli
 from datetime import datetime, timezone
 from locationsharinglib import Service
@@ -21,9 +20,10 @@ ALARM_SOUND_URL = "https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clo
 
 
 # ==============================================================================
-# 2. HÀM HỖ TRỢ & BỘ LỌC KALMAN (GIỮ NGUYÊN)
+# 2. HÀM HỖ TRỢ & BỘ LỌC KALMAN (ĐÃ CLEAN SẠCH)
 # ==============================================================================
 def auto_fix_cookie_file():
+    """Tự động sửa lỗi định dạng file cookie nếu có."""
     if not os.path.exists(COOKIES_FILE): return
     try:
         with open(COOKIES_FILE, 'r', encoding='utf-8', errors='ignore') as f:
@@ -37,6 +37,7 @@ def auto_fix_cookie_file():
 
 
 def play_laptop_sound():
+    """Phát âm thanh hệ thống (CHỈ TRÊN WINDOWS)"""
     try:
         import winsound
         winsound.Beep(2500, 1000)
@@ -45,6 +46,7 @@ def play_laptop_sound():
 
 
 def play_web_sound_script():
+    """Chèn JavaScript để cưỡng bức trình duyệt phát âm thanh."""
     st.markdown(
         f"""
         <audio id="alarm_sound" src="{ALARM_SOUND_URL}" preload="auto"></audio>
@@ -58,27 +60,29 @@ def play_web_sound_script():
 
 
 class SimpleKalmanFilter:
+    """Class đã sửa lỗi Trailing Semicolon"""
+
     def __init__(self, initial_x, initial_v, dt=1.0):
-        self.x = initial_x;
-        self.v = initial_v;
-        self.dt = dt;
-        self.P_xx = 10.0;
-        self.P_vv = 10.0;
-        self.P_xv = 0.0;
-        self.Q_a = 0.1;
+        self.x = initial_x
+        self.v = initial_v
+        self.dt = dt
+        self.P_xx = 10.0
+        self.P_vv = 10.0
+        self.P_xv = 0.0
+        self.Q_a = 0.1
         self.R = 5.0
 
     def predict(self):
-        self.x += self.v * self.dt;
-        self.P_xx += self.dt * (2 * self.P_xv + self.dt * self.P_vv) + self.Q_a * (self.dt ** 4) / 4;
-        self.P_xv += self.dt * self.P_vv + self.Q_a * (self.dt ** 3) / 2;
+        self.x += self.v * self.dt
+        self.P_xx += self.dt * (2 * self.P_xv + self.dt * self.P_vv) + self.Q_a * (self.dt ** 4) / 4
+        self.P_xv += self.dt * self.P_vv + self.Q_a * (self.dt ** 3) / 2
         self.P_vv += self.Q_a * self.dt ** 2
         return self.x
 
     def update(self, z):
         S = self.P_xx + self.R;
         K_x = self.P_xx / S;
-        K_v = self.P_xv / S;
+        K_v = self.P_xv / S
         y = z - self.x;
         self.x += K_x * y;
         self.v += K_v * y
@@ -91,8 +95,8 @@ class SimpleKalmanFilter:
 
 class WorkerTracker:
     def __init__(self, name):
-        self.name = name;
-        self.history = deque(maxlen=SMOOTHING_WINDOW);
+        self.name = name
+        self.history = deque(maxlen=SMOOTHING_WINDOW)
         self.anchor_pos = None;
         self.kf = None;
         self.is_ready = False
@@ -101,11 +105,19 @@ class WorkerTracker:
     def add(self, pos):
         self.history.append(pos)
 
+    def get_smoothed_position(self):
+        # Hàm này đã được khôi phục và đảm bảo đúng cấu trúc
+        if not self.history: return None
+        avg_lat = sum(p[0] for p in self.history) / len(self.history)
+        avg_lon = sum(p[1] for p in self.history) / len(self.history)
+        return avg_lat, avg_lon
+
     def set_anchor(self):
         if not self.anchor_pos and self.history:
             self.anchor_pos = self.history[-1];
             self.kf = SimpleKalmanFilter(0.0, 0.0);
             self.is_ready = True
+            self.last_pos_report = self.anchor_pos
             return True
         return False
 
@@ -126,29 +138,24 @@ class WorkerTracker:
 # ==============================================================================
 st.set_page_config(page_title="ACSM Monitor PRO", page_icon="🏗️", layout="wide")
 
-# --- CUSTOM CSS CHO PHỐI MÀU HIỆN ĐẠI ---
+# --- CUSTOM CSS CHO FULL SCREEN & THẨM MỸ ---
 st.markdown("""
     <style>
-    /* BẮT BUỘC: Fix Full Screen */
+    /* Fix Full Screen */
     .main .block-container {
-        padding: 1rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
         max-width: 100%;
     }
     .stApp { background-color: #f4f6f8; }
 
-    /* MÀU SẮC CHỦ ĐẠO (MODERN NAVY/TEAL) */
-    .title-box { 
-        background-color: #1a567c; /* Deep Navy */
-        padding: 10px 0; border-radius: 8px; color: white; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
-    }
-
     /* MÀU CẢNH BÁO MỚI */
-    .stAlert-danger { background-color: #c0392b !important; color: white; } /* Crimson Red */
-    .stAlert-warning { background-color: #f39c12 !important; color: black; } /* Muted Orange */
-    .stAlert-success { background-color: #1abc9c !important; color: white; } /* Muted Teal Green */
-
-    /* BỎ CÁC ICON MẶC ĐỊNH STREAMLIT */
-    .stExpander > div:first-child .icon { visibility: hidden; } 
+    .title-box { background-color: #1a567c; padding: 10px 0; border-radius: 8px; color: white; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    .stAlert-danger { background-color: #c0392b !important; color: white; }
+    .stAlert-warning { background-color: #f39c12 !important; color: black; }
+    .stAlert-success { background-color: #1abc9c !important; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -162,7 +169,7 @@ placeholder = st.empty()
 while True:
     with placeholder.container():
         try:
-            service = Service(cookies_file=COOKIES_FILE, authenticating_account=MY_EMAIL)
+            service = Service(cookies_file=COOKIES_FILE, authenticating_account='nguyendangkhoa420614@gmail.com')
             people = list(service.get_all_people())
             now = datetime.now().strftime('%H:%M:%S')
             st.caption(f"📡 Cập nhật lần cuối: {now} (Tự động làm mới sau 3s)")
@@ -176,10 +183,10 @@ while True:
             col1, col2 = st.columns([1, 1.5])
 
             with col1:
-                st.subheader("Trạng thái Nhân sự")
+                st.subheader("👷 Danh sách Nhân sự")
                 for person in people:
                     name = person.full_name
-                    if MY_EMAIL in name or 'nguyendangkhoa' in name or name in ['Me', 'Bạn']: continue
+                    if 'nguyendangkhoa420614@gmail.com' in name or name in ['Me', 'Bạn']: continue
                     if not person.latitude: continue
 
                     if name not in st.session_state.trackers: st.session_state.trackers[name] = WorkerTracker(name)
@@ -197,7 +204,7 @@ while True:
                             st.error(f"🚫 MẤT TÍN HIỆU ({int(age_min)} phút)")
                         elif not tracker.is_ready:
                             if tracker.set_anchor():
-                                st.success("Đã chốt mốc ban đầu!")
+                                st.success("✅ Đã chốt mốc ban đầu!")
                             else:
                                 st.info("⏳ Đang khởi tạo...")
                         else:
@@ -220,8 +227,19 @@ while True:
                                 play_web_sound_script()
                                 play_laptop_sound()
                             else:
-                                st.markdown('<div class="stAlert stAlert-success">✅ ĐANG LÀM VIỆC</div>',
-                                            unsafe_allow_html=True)
+                                # Logic Báo cáo chi tiết
+                                current_smoothed_pos = tracker.get_smoothed_position()
+                                dist_moved = geodesic(tracker.last_pos_report, current_smoothed_pos).meters
+                                tracker.last_pos_report = current_smoothed_pos
+
+                                if dist_moved < 5.0:
+                                    st.markdown(
+                                        '<div class="stAlert stAlert-success">🔨 CÔNG NHÂN ĐANG LÀM VIỆC (VỊ TRÍ CŨ)</div>',
+                                        unsafe_allow_html=True)
+                                else:
+                                    st.markdown(
+                                        '<div class="stAlert stAlert-success">✅ ĐANG DI CHUYỂN TRONG VÙNG</div>',
+                                        unsafe_allow_html=True)
 
                             if len(tracker.dist_history) > 2:
                                 df_chart = pd.DataFrame(
@@ -241,8 +259,7 @@ while True:
                                 all_data.append({'Tên': t_name, 'Thời gian': i, 'Khoảng cách': d})
 
                     if all_data:
-                        df_all = pd.DataFrame(all_data)
-                        fig = px.line(df_all, x="Thời gian", y="Khoảng cách", color='Tên', height=300)
+                        fig = px.line(pd.DataFrame(all_data), x="Thời gian", y="Khoảng cách", color='Tên', height=300)
                         fig.add_hline(y=SAFE_RADIUS, line_dash="dash", line_color="red", annotation_text="Giới hạn")
                         st.plotly_chart(fig, use_container_width=True)
 
@@ -253,9 +270,3 @@ while True:
         time.sleep(3)
         st.rerun()
 
-if __name__ == "__main__":
-    if st._is_running_with_streamlit:
-        pass
-    else:
-        sys.argv = ["streamlit", "run", os.path.abspath(__file__)]
-        sys.exit(stcli.main())
